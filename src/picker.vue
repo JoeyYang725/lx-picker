@@ -32,19 +32,16 @@
 
 <script>
 export default {
+  props: {},
   data() {
     return {
       days: [],
     };
   },
-
-  components: {},
-
-  computed: {},
-
-  mounted() {},
-
+  watch: {},
   methods: {},
+  mounted() {},
+  beforeDestroy() {},
 };
 </script>
 <style scoped></style>
