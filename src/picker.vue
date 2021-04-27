@@ -1,7 +1,22 @@
 <template>
   <div class="lx-picker">
-    <input type="text" />
-    <div class="picker-wrap">
+    <input
+      type="text"
+      v-bind="inputAttr"
+      :name="name"
+      :style="inputStyle"
+      :class="inputClass"
+      :readonly="readonly"
+      :value="pickedValue"
+      @click="show = !show"
+    />
+    <div
+      class="picker-wrap"
+      v-bind="calendarAttr"
+      :style="calendarStyle"
+      :class="calendarClass"
+      v-show="show"
+    >
       <table class="date-picker">
         <thead>
           <tr class="date-head">
@@ -21,8 +36,25 @@
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td></td>
+          <tr v-for="(v, i) in 6" :key="i">
+            <td
+              v-for="(v, j) in 7"
+              :key="j"
+              :class="[
+                date[i * 7 + j] ? date[i * 7 + j].status : '',
+                {
+                  'date-disabled': date[i * 7 + j] && date[i * 7 + j].disabled,
+                },
+              ]"
+              :date="date[i * 7 + j] && date[i * 7 + j].date"
+              @click="
+                date[i * 7 + j] &&
+                  !date[i * 7 + j].disabled &&
+                  pickDate(i * 7 + j)
+              "
+            >
+              {{ date[i * 7 + j] && date[i * 7 + j].text }}
+            </td>
           </tr>
         </tbody>
       </table>
@@ -81,7 +113,43 @@ export default {
     close() {
       this.show = false;
     },
-    update() {},
+    update() {
+      let arr = [];
+      let time = new Date(this.now);
+      time.setMonth(time.getMonth(), 1);
+      //获取该月第一天的星期
+      let curFirstDay = time.getDay();
+      curFirstDay === 0 && (curFirstDay = 7);
+      time.setDate(0); //获取上个月最后一天
+      let lastDayCount = time.getDate();
+      //日历上灰色部分（上个月的部分）
+      for (let i = curFirstDay; i > 0; i--) {
+        let tmpTime = new Date(
+          time.getFullYear(),
+          time.getMonth(),
+          lastDayCount - i + 1
+        );
+        arr.push({
+          text: lastDayCount - i + 1,
+          time: tmpTime,
+          status: "date-pass",
+          disabled: this.disabledDate(tmpTime),
+        });
+      }
+      //日历上灰色部分（下个月的部分）
+      let j = 1;
+      while (arr.length < 42) {
+        let tmpTime = new Date(time.getFullYear(), time.getMonth() + 1, j);
+        arr.push({
+          text: j,
+          time: tmpTime,
+          status: "date-future",
+          disabled: this.disabledDate(tmpTime),
+        });
+        j++;
+      }
+      this.date = arr;
+    },
     //点击改变年份
     yearClick(flag) {
       this.now.setFullYear(this.now.getFullYear() + flag);
@@ -136,4 +204,142 @@ export default {
   },
 };
 </script>
-<style scoped></style>
+
+<style scoped>
+.datetime-picker {
+  position: relative;
+  display: inline-block;
+  font-family: "Segoe UI", "Lucida Grande", Helvetica, Arial, "Microsoft YaHei";
+  -webkit-font-smoothing: antialiased;
+  color: #333;
+}
+
+.datetime-picker * {
+  box-sizing: border-box;
+}
+
+.datetime-picker input {
+  width: 238px;
+  padding: 5px 10px;
+  height: 30px;
+  outline: 0 none;
+  border: 1px solid #ccc;
+  font-size: 13px;
+}
+
+.datetime-picker .picker-wrap {
+  position: absolute;
+  z-index: 1000;
+  width: 238px;
+  height: 280px;
+  margin-top: 2px;
+  background-color: #fff;
+  box-shadow: 0 0 6px #ccc;
+}
+
+.datetime-picker table {
+  width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+  text-align: center;
+  font-size: 13px;
+}
+
+.datetime-picker tr {
+  height: 34px;
+  border: 0 none;
+}
+
+.datetime-picker th,
+.datetime-picker td {
+  overflow: hidden;
+  user-select: none;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0 none;
+  line-height: 34px;
+  text-align: center;
+}
+
+.datetime-picker td {
+  cursor: pointer;
+}
+
+.datetime-picker td:hover {
+  background-color: #f0f0f0;
+}
+
+.datetime-picker .date-disabled:not(.date-active) {
+  cursor: not-allowed;
+  color: #ccc;
+}
+
+.datetime-picker .date-disabled:not(.date-active):hover {
+  background-color: transparent;
+}
+
+.datetime-picker .date-pass,
+.datetime-picker .date-future {
+  color: #aaa;
+}
+
+.datetime-picker .date-active,
+.datetime-picker .date-active:hover {
+  background-color: #ececec;
+  color: #3bb4f2;
+}
+
+.datetime-picker .date-head {
+  background-color: #3bb4f2;
+  text-align: center;
+  color: #fff;
+  font-size: 14px;
+}
+
+.datetime-picker .date-days {
+  color: #3bb4f2;
+  font-size: 14px;
+}
+
+.datetime-picker .show-year {
+  display: inline-block;
+  min-width: 66px;
+}
+
+.datetime-picker .show-month {
+  display: inline-block;
+  min-width: 32px;
+}
+
+.datetime-picker .btn-prev,
+.datetime-picker .btn-next {
+  cursor: pointer;
+  padding: 8px 11px;
+}
+
+.datetime-picker .btn-prev::after,
+.datetime-picker .btn-next::after {
+  position: relative;
+  content: "";
+  left: 2px;
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-top: 1px solid #fff;
+  border-left: 1px solid #fff;
+  transform: rotate(-45deg);
+}
+
+.datetime-picker .btn-next::after {
+  left: -2px;
+  border: 0 none;
+  border-right: 1px solid #fff;
+  border-bottom: 1px solid #fff;
+}
+
+.datetime-picker .btn-prev:hover,
+.datetime-picker .btn-next:hover {
+  background: rgba(16, 160, 234, 0.5);
+}
+</style>
